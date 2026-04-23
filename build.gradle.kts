@@ -1,7 +1,11 @@
 plugins {
     java
     scala
+    groovy
+    alias(libs.plugins.kotlin.jvm)
     jacoco
+    pmd
+    checkstyle
 }
 
 repositories {
@@ -9,10 +13,25 @@ repositories {
 }
 
 dependencies {
-    implementation("org.scala-lang:scala3-library_3:3.7.4")
-    testImplementation(platform("org.junit:junit-bom:6.0.3"))
-    testImplementation("org.junit.jupiter:junit-jupiter")
-    testRuntimeOnly("org.junit.platform:junit-platform-launcher")
+    implementation(libs.groovy)
+    implementation(libs.scala.stdlib)
+    testImplementation(platform(libs.junit.bom))
+    testImplementation(libs.junit.jupiter)
+    testRuntimeOnly(libs.junit.platform.launcher)
+}
+
+val jvmVersion = libs.versions.jvm.get().toInt()
+
+java {
+    toolchain {
+        languageVersion.set(JavaLanguageVersion.of(jvmVersion))
+        vendor.set(JvmVendorSpec.ADOPTIUM)
+    }
+}
+
+tasks.named("build") {
+    dependsOn("javadoc")
+    dependsOn("scaladoc")
 }
 
 tasks.named<Test>("test") {
@@ -23,9 +42,7 @@ tasks.jacocoTestReport {
     dependsOn(tasks.test)
 
     reports {
-        xml.required.set(false)
-        csv.required.set(false)
-        html.outputLocation.set(layout.buildDirectory.dir("jacocoHtml"))
+        xml.required.set(true)
     }
 }
 
@@ -39,4 +56,15 @@ tasks.jacocoTestCoverageVerification {
             }
         }
     }
+}
+
+pmd {
+    isConsoleOutput = true
+    toolVersion = "7.23.0"
+    ruleSetFiles = files("config/pmd/ruleset.xml")
+    ruleSets = listOf()
+}
+
+checkstyle {
+    toolVersion = "10.12.4"
 }
